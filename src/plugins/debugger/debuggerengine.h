@@ -451,6 +451,7 @@ public:
     void updateLocalsWindow(bool showReturn);
     void raiseWatchersWindow();
     QString debuggerName() const;
+    QString debuggerType() const;
 
     bool isRegistersWindowVisible() const;
     bool isPeripheralRegistersWindowVisible() const;
@@ -493,6 +494,7 @@ public:
 
 protected:
     void setDebuggerName(const QString &name);
+    void setDebuggerType(const QString &type);
     void notifyDebuggerProcessFinished(const Utils::ProcessResultData &resultData,
                                        const QString &backendName);
 

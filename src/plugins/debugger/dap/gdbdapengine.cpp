@@ -82,7 +82,8 @@ GdbDapEngine::GdbDapEngine()
     : DapEngine()
 {
     setObjectName("GdbDapEngine");
-    setDebuggerName("GdbDAP");
+    setDebuggerName("Gdb");
+    setDebuggerType("DAP");
 }
 
 void GdbDapEngine::setupEngine()
