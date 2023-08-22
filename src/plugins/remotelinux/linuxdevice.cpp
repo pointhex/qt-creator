@@ -1456,6 +1456,11 @@ private:
 FileTransferInterface *LinuxDevice::createFileTransferInterface(
         const FileTransferSetupData &setup) const
 {
+    if (Utils::anyOf(setup.m_files,
+                     [](const FileToTransfer &f) { return f.m_source.needsDevice(); })) {
+        return new GenericTransferImpl(setup);
+    }
+
     switch (setup.m_method) {
     case FileTransferMethod::Sftp:  return new SftpTransferImpl(setup, sharedFromThis());
     case FileTransferMethod::Rsync: return new RsyncTransferImpl(setup, sharedFromThis());
