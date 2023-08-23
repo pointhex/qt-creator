@@ -302,17 +302,12 @@ QWidget *AndroidBuildApkWidget::createAdvancedGroup()
     auto verboseOutputCheckBox = new QCheckBox(Tr::tr("Verbose output"), group);
     verboseOutputCheckBox->setChecked(m_step->verboseOutput());
 
-    auto vbox = new QVBoxLayout(group);
-    QtSupport::QtVersion *version = QtSupport::QtKitAspect::qtVersion(m_step->kit());
-    if (version && version->qtVersion() >= QVersionNumber(5, 14)) {
-        auto buildAAB = new QCheckBox(Tr::tr("Build Android App Bundle (*.aab)"), group);
-        buildAAB->setChecked(m_step->buildAAB());
-        connect(buildAAB, &QAbstractButton::toggled, m_step, &AndroidBuildApkStep::setBuildAAB);
-        vbox->addWidget(buildAAB);
-    }
-    vbox->addWidget(openPackageLocationCheckBox);
-    vbox->addWidget(verboseOutputCheckBox);
-    vbox->addWidget(m_addDebuggerCheckBox);
+    Layouting::Column {
+        m_step->buildAAB,
+        openPackageLocationCheckBox,
+        verboseOutputCheckBox,
+        m_addDebuggerCheckBox
+    }.attachTo(group);
 
     connect(verboseOutputCheckBox, &QAbstractButton::toggled,
             this, [this](bool checked) { m_step->setVerboseOutput(checked); });
@@ -479,6 +474,11 @@ AndroidBuildApkStep::AndroidBuildApkStep(BuildStepList *parent, Utils::Id id)
     setImmutable(true);
     setDisplayName(Tr::tr("Build Android APK"));
 
+    QtSupport::QtVersion *version = QtSupport::QtKitAspect::qtVersion(kit());
+
+    buildAAB.setLabelText(Tr::tr("Build Android App Bundle (*.aab)"));
+    buildAAB.setVisible(version && version->qtVersion() >= QVersionNumber(5, 14));
+
     connect(this, &BuildStep::addOutput, this, [this](const QString &string, OutputFormat format) {
         if (format == OutputFormat::Stderr)
             stdError(string);
@@ -566,7 +566,7 @@ bool AndroidBuildApkStep::init()
 
     arguments << "--gradle";
 
-    if (m_buildAAB)
+    if (buildAAB())
         arguments << "--aab" <<  "--jarsigner";
 
     if (buildType() == BuildConfiguration::Release) {
@@ -879,7 +879,7 @@ void AndroidBuildApkStep::updateBuildToolsVersionInJsonFile()
     }
 }
 
-void AndroidBuildApkStep::fromMap(const QVariantMap &map)
+void AndroidBuildApkStep::fromMap(const Storage &map)
 {
     m_keystorePath = FilePath::fromSettings(map.value(KeystoreLocationKey));
     m_signPackage = false; // don't restore this
@@ -893,7 +893,7 @@ void AndroidBuildApkStep::fromMap(const QVariantMap &map)
     ProjectExplorer::BuildStep::fromMap(map);
 }
 
-void AndroidBuildApkStep::toMap(QVariantMap &map) const
+void AndroidBuildApkStep::toMap(Storage &map) const
 {
     ProjectExplorer::AbstractProcessStep::toMap(map);
     map.insert(KeystoreLocationKey, m_keystorePath.toSettings());
@@ -995,16 +995,6 @@ bool AndroidBuildApkStep::signPackage() const
 void AndroidBuildApkStep::setSignPackage(bool b)
 {
     m_signPackage = b;
-}
-
-bool AndroidBuildApkStep::buildAAB() const
-{
-    return m_buildAAB;
-}
-
-void AndroidBuildApkStep::setBuildAAB(bool aab)
-{
-    m_buildAAB = aab;
 }
 
 bool AndroidBuildApkStep::openPackageLocation() const

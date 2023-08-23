@@ -215,7 +215,9 @@ CMakeBuildSettingsWidget::CMakeBuildSettingsWidget(CMakeBuildConfiguration *bc) 
     m_kitConfiguration = new QPushButton(Tr::tr("Kit Configuration"));
     m_kitConfiguration->setToolTip(Tr::tr("Edit the current kit's CMake configuration."));
     m_kitConfiguration->setFixedWidth(m_kitConfiguration->sizeHint().width());
-    connect(m_kitConfiguration, &QPushButton::clicked, this, [this] { kitCMakeConfiguration(); });
+    connect(m_kitConfiguration, &QPushButton::clicked,
+            this, &CMakeBuildSettingsWidget::kitCMakeConfiguration,
+            Qt::QueuedConnection);
 
     m_filterEdit = new FancyLineEdit;
     m_filterEdit->setPlaceholderText(Tr::tr("Filter"));
@@ -646,20 +648,16 @@ void CMakeBuildSettingsWidget::kitCMakeConfiguration()
         m_buildConfig->kit()->unblockNotification();
     });
 
-    CMakeKitAspectFactory kitAspectFactory;
-    CMakeGeneratorKitAspectFactory generatorAspectFactory;
-    CMakeConfigurationKitAspectFactory configurationKitAspectFactory;
-
     Layouting::Grid grid;
-    KitAspect *widget = kitAspectFactory.createKitAspect(m_buildConfig->kit());
+    KitAspect *widget = CMakeKitAspect::createKitAspect(m_buildConfig->kit());
     widget->setParent(dialog);
-    widget->addToLayoutWithLabel(grid, dialog);
-    widget = generatorAspectFactory.createKitAspect(m_buildConfig->kit());
+    widget->addToLayoutWithLabel(grid);
+    widget = CMakeGeneratorKitAspect::createKitAspect(m_buildConfig->kit());
     widget->setParent(dialog);
-    widget->addToLayoutWithLabel(grid, dialog);
-    widget = configurationKitAspectFactory.createKitAspect(m_buildConfig->kit());
+    widget->addToLayoutWithLabel(grid);
+    widget = CMakeConfigurationKitAspect::createKitAspect(m_buildConfig->kit());
     widget->setParent(dialog);
-    widget->addToLayoutWithLabel(grid, dialog);
+    widget->addToLayoutWithLabel(grid);
     grid.attachTo(dialog);
 
     auto layout = qobject_cast<QGridLayout *>(dialog->layout());
@@ -2141,14 +2139,14 @@ void InitialCMakeArgumentsAspect::setCMakeConfiguration(const CMakeConfig &confi
         ci.isInitial = true;
 }
 
-void InitialCMakeArgumentsAspect::fromMap(const QVariantMap &map)
+void InitialCMakeArgumentsAspect::fromMap(const Storage &map)
 {
     const QString value = map.value(settingsKey(), defaultValue()).toString();
     QStringList additionalArguments;
     setAllValues(value, additionalArguments);
 }
 
-void InitialCMakeArgumentsAspect::toMap(QVariantMap &map) const
+void InitialCMakeArgumentsAspect::toMap(Storage &map) const
 {
     saveToMap(map, allValues().join('\n'), defaultValue(), settingsKey());
 }
@@ -2233,7 +2231,7 @@ ConfigureEnvironmentAspect::ConfigureEnvironmentAspect(AspectContainer *containe
     });
 }
 
-void ConfigureEnvironmentAspect::fromMap(const QVariantMap &map)
+void ConfigureEnvironmentAspect::fromMap(const Storage &map)
 {
     // Match the key values from Qt Creator 9.0.0/1 to the ones from EnvironmentAspect
     const bool cleanSystemEnvironment = map.value(QLatin1String(CLEAR_SYSTEM_ENVIRONMENT_KEY))
@@ -2251,7 +2249,7 @@ void ConfigureEnvironmentAspect::fromMap(const QVariantMap &map)
     ProjectExplorer::EnvironmentAspect::fromMap(tmpMap);
 }
 
-void ConfigureEnvironmentAspect::toMap(QVariantMap &map) const
+void ConfigureEnvironmentAspect::toMap(Storage &map) const
 {
     QVariantMap tmpMap;
     ProjectExplorer::EnvironmentAspect::toMap(tmpMap);
