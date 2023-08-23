@@ -1,0 +1,2 @@
+npm install code-review-gpt
+npx code-review-gpt configure --setupTarget=github
